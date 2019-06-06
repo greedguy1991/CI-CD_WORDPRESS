@@ -1,0 +1,79 @@
+pipeline { 
+    agent { node { label 'Ubuntu' } }  
+    stages {
+        stage('CREATE DUMP MYSQL BASE') { 
+            steps { 
+                sh """ pwd
+                mysqldump -u wordpress  wordpress -prandompassword > /home/kir/database_dump.sql
+                """
+            }    
+        }
+    
+        stage('BACKUP FOLDER WORDPRESS') { 
+            steps { 
+                sh """ 
+                sudo rsync -Waq /var/www/ /home/kir"""
+            }    
+        }
+        
+        stage('BACKUP FOLDER WORDPRESS1') { 
+            steps { 
+                sh """ sudo rm -rf /var/www/html/wp-includes
+                       sudo rm -rf /var/www/html/wp-admin
+                     """
+            }    
+        }
+
+        stage('DOWNLOAD NEW VERSION APP') { 
+            steps { 
+                sh """ 
+                   cd /tmp/ && wget https://wordpress.org/latest.tar.gz  """
+            }    
+        }
+
+        stage('UNZIP APP1') { 
+            steps { 
+                sh """ cd /tmp/ && tar -xvzf latest.tar.gz  """
+            }    
+        }
+        
+        stage('COPY FOLDER NEW VERSION') { 
+            steps { 
+                sh """ 
+               sudo cp -r /tmp/wordpress/* /var/www/wordpress/
+                """
+            }  
+         }
+         
+        stage('COPY FOLDER NEW VERSION111') { 
+            steps { 
+                sh """ 
+                cd /tmp/ &&  rm -rf wordpress
+
+                """
+            }  
+         }
+        stage('TEST1') { 
+            steps { 
+                sh """
+                      curl http://localhost > output.txt
+                """
+            }    
+        }
+        stage('TEST2') { 
+            steps { 
+                sh """
+                      grep WordPress output.txt
+                """
+            }    
+        }
+    }
+post{
+    success {
+        slackSend ( message: "SUCCESSFUL: UPDATE work in SANBOX ")
+        }
+        failure {
+            slackSend ( message: "FAILED: Job ")
+        }
+    }
+}   

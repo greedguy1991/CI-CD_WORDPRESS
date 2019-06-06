@@ -1,0 +1,84 @@
+pipeline { 
+    agent { node { label 'PROD' } }  
+    stages {
+ 
+        stage('CREATE DUMP MYSQL BASE') { 
+            steps { 
+                sh """ pwd
+                mysqldump -u wordpress  wordpress -prandompassword > /home/kir/database_dump.sql
+                """
+            }    
+        }
+        
+        stage('BACKUP FOLDER WORDPRESS') { 
+            steps { 
+                sh """ 
+                sudo rsync -Waq /var/www/ /home/kir"""
+            }    
+        }
+        
+        stage('DELETE OLD FOLDERS') { 
+            steps { 
+                sh """ sudo rm -rf /var/www/html/wp-includes
+                       sudo rm -rf /var/www/html/wp-admin
+                     
+ """
+            }    
+        }
+
+        stage('DOWNLOAD NEW VERSION APP') { 
+            steps { 
+                sh """ 
+                   cd /tmp/ && wget https://wordpress.org/latest.tar.gz  """
+            }    
+        }
+
+        stage('UNZIP LATEST VERSION') { 
+            steps { 
+                sh """ cd /tmp/ && tar -xvzf latest.tar.gz  """
+            }    
+        }
+        
+        stage('COPY FOLDER NEW VERSION') { 
+            steps { 
+                sh """ 
+               sudo cp -r /tmp/wordpress/* /var/www/wordpress/
+                """
+            }  
+         }
+         
+         
+        stage('DELETE FOLDER NEW VERSION in TMP DIRECTORY') { 
+            steps { 
+                sh """ 
+                cd /tmp/ &&  rm -rf wordpress
+                 """
+            }  
+         }
+         
+        stage('TEST1') { 
+            steps { 
+                sh """
+                      curl http://localhost > output.txt
+                """
+            }    
+        }
+        
+        stage('TEST2') { 
+            steps { 
+                sh """
+                      grep WordPress output.txt
+                """
+            }    
+        }
+    }
+post{
+    success {
+        slackSend ( message: "SUCCESSFUL: NEW VERSION IN PRE-PROD ")
+        }
+        failure {
+            slackSend ( message: "FAILED: JUST FAIL ")
+        }
+    }
+}    
+    

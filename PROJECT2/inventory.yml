@@ -1,0 +1,11 @@
+---
+all:
+  hosts:
+    wordpress1:
+      ansible_user: kir
+      ansible_host: 192.168.100.9
+    wordpress2:
+      ansible_user: kir
+      ansible_host: 192.168.100.4
+~
+
